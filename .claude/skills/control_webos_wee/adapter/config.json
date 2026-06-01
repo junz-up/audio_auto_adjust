@@ -19,7 +19,7 @@
     "host": "10.22.31.22",
     "port": 60022,
     "user": "huangjunzhi",
-    "password": "657Yellow./",
+    "password": "",
     "docker_cmd": "docker_tizen_build",
     "build_cmd": "make tmp",
     "build_timeout": 14400
