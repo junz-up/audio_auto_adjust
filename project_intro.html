@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TV音频功率自动化测试与校准系统</title>
+<style>
+  :root {
+    --primary: #1a73e8;
+    --primary-dark: #0d47a1;
+    --accent: #00c853;
+    --bg: #f4f6fa;
+    --card: #ffffff;
+    --text: #222;
+    --text-light: #555;
+    --border: #e0e4ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #42a5f5 100%);
+    color: #fff; padding: 60px 40px 50px; text-align: center;
+  }
+  .header h1 { font-size: 2.4em; font-weight: 700; letter-spacing: 1px; }
+  .header p { font-size: 1.15em; margin-top: 12px; opacity: .9; }
+  .badge { display: inline-block; background: rgba(255,255,255,.2); border-radius: 20px; padding: 4px 16px; font-size: .85em; margin-top: 16px; }
+
+  /* Container */
+  .container { max-width: 1100px; margin: -30px auto 60px; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* Section */
+  .section { margin-bottom: 36px; }
+  .section-title {
+    font-size: 1.35em; font-weight: 700; color: var(--primary-dark);
+    border-left: 4px solid var(--primary); padding-left: 14px; margin-bottom: 18px;
+  }
+
+  /* Cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .card {
+    background: var(--card); border-radius: 12px; padding: 28px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06); border: 1px solid var(--border);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+  .card h3 { font-size: 1.1em; color: var(--primary); margin-bottom: 8px; }
+  .card p, .card ul { font-size: .93em; color: var(--text-light); }
+  .card ul { padding-left: 18px; }
+  .card ul li { margin-bottom: 4px; }
+  .icon { font-size: 1.6em; margin-bottom: 10px; display: block; }
+
+  /* Architecture diagram */
+  .arch-box {
+    background: var(--card); border-radius: 12px; padding: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06); border: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .arch-diagram { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
+  .arch-node {
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid var(--primary);
+    border-radius: 10px; padding: 16px 20px; text-align: center; min-width: 140px;
+    font-weight: 600; font-size: .92em;
+  }
+  .arch-node.core { background: linear-gradient(135deg, var(--primary), #42a5f5); color: #fff; border-color: var(--primary-dark); min-width: 180px; }
+  .arch-node.hw { background: linear-gradient(135deg, #e8f5e9, #a5d6a7); border-color: #388e3c; }
+  .arch-arrow { font-size: 1.5em; color: var(--primary); padding: 0 8px; font-weight: bold; }
+
+  /* Flow steps */
+  .flow { display: flex; flex-wrap: wrap; gap: 0; align-items: stretch; justify-content: center; }
+  .flow-step {
+    flex: 1 1 130px; max-width: 180px; text-align: center; padding: 18px 10px;
+    position: relative;
+  }
+  .flow-step .num {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1em; margin-bottom: 8px;
+  }
+  .flow-step .label { font-size: .88em; color: var(--text); font-weight: 600; }
+  .flow-step .desc { font-size: .78em; color: var(--text-light); margin-top: 4px; }
+  .flow-step:not(:last-child)::after {
+    content: "→"; position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+    font-size: 1.4em; color: var(--primary); font-weight: bold;
+  }
+
+  /* Table */
+  .spec-table { width: 100%; border-collapse: collapse; font-size: .92em; }
+  .spec-table th { background: var(--primary); color: #fff; padding: 10px 14px; text-align: left; }
+  .spec-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .spec-table tr:hover td { background: #f0f4ff; }
+
+  /* Highlights */
+  .highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; }
+  .highlight-item {
+    background: var(--card); border-radius: 10px; padding: 24px 20px; text-align: center;
+    border: 1px solid var(--border);
+  }
+  .highlight-item .number { font-size: 2em; font-weight: 800; color: var(--primary); }
+  .highlight-item .unit { font-size: .85em; color: var(--text-light); }
+
+  /* Footer */
+  .footer { text-align: center; padding: 30px; font-size: .85em; color: #999; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>TV 音频功率自动化测试与校准系统</h1>
+  <p>基于 Claude Code AI Agent 的闭环音频参数调试平台</p>
+  <span class="badge">webOS &middot; Claude Code &middot; Python &middot; 2026</span>
+</div>
+
+<div class="container">
+
+  <!-- 项目概览 -->
+  <div class="section">
+    <h2 class="section-title">项目概览</h2>
+    <div class="arch-box">
+      <p style="margin-bottom:16px;color:var(--text-light);font-size:.95em;">
+        本系统实现了 LG webOS 电视扬声器音频功率的<strong>全自动化测试与校准</strong>。通过 AI Agent 编排多台硬件设备，
+        自动完成信号源切换、功率测量、参数计算、固件编译与升级，形成完整的闭环调试流程，
+        将原本需要工程师数小时手动操作的校准过程缩短至<strong>全自动完成</strong>。
+      </p>
+    </div>
+  </div>
+
+  <!-- 数字亮点 -->
+  <div class="section">
+    <h2 class="section-title">核心价值</h2>
+    <div class="highlights">
+      <div class="highlight-item">
+        <div class="number">5+</div>
+        <div class="unit">支持信号通道</div>
+        <div style="font-size:.8em;color:#999;margin-top:4px;">HDMI / AV / DTV / ATV / USB</div>
+      </div>
+      <div class="highlight-item">
+        <div class="number">6</div>
+        <div class="unit">硬件设备联动</div>
+        <div style="font-size:.8em;color:#999;margin-top:4px;">AP / TG39 / DTVPlayer / UIAT / TV / USB</div>
+      </div>
+      <div class="highlight-item">
+        <div class="number">100%</div>
+        <div class="unit">全自动闭环</div>
+        <div style="font-size:.8em;color:#999;margin-top:4px;">测量→计算→编译→升级→验证</div>
+      </div>
+      <div class="highlight-item">
+        <div class="number">Excel</div>
+        <div class="unit">自动生成报告</div>
+        <div style="font-size:.8em;color:#999;margin-top:4px;">含功率/THD+N/声道平衡</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 系统架构 -->
+  <div class="section">
+    <h2 class="section-title">系统架构</h2>
+    <div class="arch-box">
+      <div class="arch-diagram" style="flex-direction:column;gap:20px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <div class="arch-node" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border-color:#e65100;min-width:200px;">
+            <div style="font-size:.75em;color:#e65100;">用户交互层</div>
+            <strong>Claude Code AI Agent</strong>
+            <div style="font-size:.75em;color:#888;">自然语言 → 意图识别 → 任务编排</div>
+          </div>
+        </div>
+        <div style="font-size:1.5em;color:var(--primary);">&#8595;</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;">
+          <div class="arch-node core">
+            <div style="font-size:.75em;">核心引擎</div>
+            <strong>自检 / 校准</strong>
+            <div style="font-size:.7em;opacity:.85;">main.py 编排器</div>
+          </div>
+        </div>
+        <div style="font-size:1.5em;color:var(--primary);">&#8595;</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;">
+          <div class="arch-node">AP AD2502<br><span style="font-size:.75em;">音频分析仪</span></div>
+          <div class="arch-node">TG39<br><span style="font-size:.75em;">ATV 信号源</span></div>
+          <div class="arch-node">DTVPlayer<br><span style="font-size:.75em;">DTV 码流源</span></div>
+          <div class="arch-node">UIAT<br><span style="font-size:.75em;">电源/USB 切换</span></div>
+          <div class="arch-node hw">webOS TV<br><span style="font-size:.75em;">SSH + 串口</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 两大核心功能 -->
+  <div class="section">
+    <h2 class="section-title">核心功能模块</h2>
+    <div class="cards">
+      <div class="card">
+        <span class="icon">&#128269;</span>
+        <h3>音频功率自检（Self-Check）</h3>
+        <p>只读测量模式，不修改任何参数：</p>
+        <ul>
+          <li>遍历指定信号通道，逐一测量 L/R 功率与 THD+N</li>
+          <li>自动判定声道平衡和功率是否达标</li>
+          <li>支持标准信号 + Max Input 两种测试工况</li>
+          <li>输出 PASS/FAIL 判定 + Excel 详细报告</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="icon">&#9881;</span>
+        <h3>音频功率自动校准（Calibration）</h3>
+        <p>闭环迭代调试，自动收敛至目标规格：</p>
+        <ul>
+          <li><strong>阶段一</strong>：DRC 预检 — 验证 Max Input 裕量</li>
+          <li><strong>阶段二</strong>：Gain 迭代 — 测量→计算→写入→编译→升级→复测（最多5轮）</li>
+          <li><strong>阶段三</strong>：DRC 回调 — 精调限幅阈值并最终验收</li>
+          <li>支持多规格批量校准（如 4R5W / 4R3W 连续调试）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 校准工作流 -->
+  <div class="section">
+    <h2 class="section-title">自动校准工作流程</h2>
+    <div class="arch-box">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="num">1</div>
+          <div class="label">信号源启动</div>
+          <div class="desc">TG39/DTVPlayer 输出测试信号</div>
+        </div>
+        <div class="flow-step">
+          <div class="num">2</div>
+          <div class="label">TV 切源</div>
+          <div class="desc">webOS 切换至目标输入通道</div>
+        </div>
+        <div class="flow-step">
+          <div class="num">3</div>
+          <div class="label">AP 测量</div>
+          <div class="desc">AD2502 采集功率与 THD+N</div>
+        </div>
+        <div class="flow-step">
+          <div class="num">4</div>
+          <div class="label">参数计算</div>
+          <div class="desc">dB 差值 → Gain/DRC 修正</div>
+        </div>
+        <div class="flow-step">
+          <div class="num">5</div>
+          <div class="label">远程写入</div>
+          <div class="desc">SSH 修改 datac 配置文件</div>
+        </div>
+        <div class="flow-step">
+          <div class="num">6</div>
+          <div class="label">编译升级</div>
+          <div class="desc">Docker 编译 + PAK 升级</div>
+        </div>
+      </div>
+      <p style="text-align:center;margin-top:14px;color:var(--primary);font-weight:600;font-size:.95em;">
+        &#8635; 重复步骤 3~6 直到功率收敛至目标规格（容差 ±5%）
+      </p>
+    </div>
+  </div>
+
+  <!-- 硬件设备适配 -->
+  <div class="section">
+    <h2 class="section-title">硬件设备适配层</h2>
+    <table class="spec-table">
+      <thead>
+        <tr><th>设备</th><th>用途</th><th>通信方式</th><th>关键能力</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>AP AD2502</strong></td>
+          <td>音频分析仪</td>
+          <td>KK 3.1 / Audiobus API</td>
+          <td>阻抗设置、发生器输出、L/R 功率与 THD+N 测量</td>
+        </tr>
+        <tr>
+          <td><strong>TG39 (54200)</strong></td>
+          <td>ATV RF 信号源</td>
+          <td>串口 (RS-232)</td>
+          <td>PAL-BG / NTSC 模拟电视信号播放，载频与调制度设置</td>
+        </tr>
+        <tr>
+          <td><strong>DTVPlayer</strong></td>
+          <td>DTV 码流源</td>
+          <td>TCP 网络</td>
+          <td>DVB-T / ATSC / ISDB-T 数字码流播放，按 dB 选择 TS 文件</td>
+        </tr>
+        <tr>
+          <td><strong>UIAT 控制板</strong></td>
+          <td>电源/USB 继电器</td>
+          <td>串口 (RS-232)</td>
+          <td>12V 电源开关、USB 设备在 TV/PC 间切换、IR 遥控</td>
+        </tr>
+        <tr>
+          <td><strong>webOS TV 主板</strong></td>
+          <td>被测设备</td>
+          <td>SSH + 串口</td>
+          <td>源切换、音量设置、Gain/DRC 读写、Docker 编译、PAK 升级</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 技术特点 -->
+  <div class="section">
+    <h2 class="section-title">技术特点</h2>
+    <div class="cards" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+      <div class="card">
+        <h3>AI 自然语言驱动</h3>
+        <p>基于 Claude Code Agent，工程师只需用自然语言描述需求（如"自动调试 6R6W HDMI"），系统自动识别意图、解析参数并执行完整流程。</p>
+      </div>
+      <div class="card">
+        <h3>全自动闭环调试</h3>
+        <p>从测量到参数修改、编译、固件升级、复测，形成完整的自动化闭环，无需人工干预。</p>
+      </div>
+      <div class="card">
+        <h3>多功放类型适配</h3>
+        <p>自动检测功放芯片类型（SY6045 步进模式 / WA153814 浮点编码），DRC 计算逻辑自动匹配。</p>
+      </div>
+      <div class="card">
+        <h3>多规格批量校准</h3>
+        <p>支持连续校准多个功放规格（如 4R5W、4R3W），自动切换 SOUND_TYPE、编译升级后依次校准。</p>
+      </div>
+      <div class="card">
+        <h3>标准化 JSON 接口</h3>
+        <p>所有设备适配器统一 JSON 输入输出，便于扩展和集成新设备。</p>
+      </div>
+      <div class="card">
+        <h3>自动生成测试报告</h3>
+        <p>每次自检/校准自动生成 Excel 报告，包含 L/R 功率、THD+N、声道平衡、PASS/FAIL 判定。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 使用方式 -->
+  <div class="section">
+    <h2 class="section-title">使用方式示例</h2>
+    <div class="arch-box" style="background:#1e1e2e;color:#cdd6f4;font-family:Consolas,'Courier New',monospace;font-size:.9em;line-height:1.8;">
+      <div style="color:#89b4fa;margin-bottom:4px;"># 自检 — 仅测量，不修改参数</div>
+      <div><span style="color:#a6e3a1;">$</span> 自检 6R6W HDMI AV DTV-DVB</div>
+      <br>
+      <div style="color:#89b4fa;margin-bottom:4px;"># 自动校准 — 闭环调试直到达标</div>
+      <div><span style="color:#a6e3a1;">$</span> 校准 6R6W HDMI AV DTV-DVB ATV-PAL</div>
+      <br>
+      <div style="color:#89b4fa;margin-bottom:4px;"># 多规格批量校准</div>
+      <div><span style="color:#a6e3a1;">$</span> 校准 4R5W 4R3W --specs ID_SOUND_xxx ID_SOUND_yyy</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  TV 音频功率自动化测试与校准系统 &middot; Powered by Claude Code &middot; 2026
+</div>
+
+</body>
+</html>

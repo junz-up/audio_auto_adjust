@@ -1,0 +1,55 @@
+{
+  "provider": "local",
+  "os_type": "webOS",
+  "code_root": "/ssd1/huangjunzhi/01_code/webos/wee30_1126",
+  "serial": {
+    "port": "COM3",
+    "baud_rate": 115200,
+    "timeout": 5
+  },
+  "uiat": {
+    "port": "COM4",
+    "baud_rate": 115200,
+    "timeout": 2,
+    "resp_window": 1.0,
+    "usb_to_pc_wait_s": 5.0,
+    "usb_to_tv_wait_s": 10.0
+  },
+  "ssh": {
+    "host": "10.22.31.22",
+    "port": 60022,
+    "user": "huangjunzhi",
+    "password": "657Yellow./",
+    "docker_cmd": "docker_tizen_build",
+    "build_cmd": "make tmp",
+    "build_timeout": 14400
+  },
+  "platform_rules": {
+    "drc_step_db": 0.125
+  },
+  "usb_key_interval_seconds": 6.0,
+  "usb_switch_to_pc_wait_seconds": 5.0,
+  "upgrade_usb_ready_wait_seconds": 15,
+  "upgrade_command_wait_seconds": 15,
+  "upgrade_baud_probe_command": "AV 00 00",
+  "upgrade_baud_probe_wait_seconds": 1.2,
+  "upgrade_detect_timeout_seconds": 25,
+  "upgrade_retry_interval_seconds": 2.0,
+  "upgrade_max_retries": 5,
+  "upgrade_boot_timeout_seconds": 180,
+  "upgrade_success_keywords": [
+    "OK",
+    "ATF:",
+    "NOTICE:",
+    "rtk_pwr_domain",
+    "DRV_PowerOff"
+  ],
+  "post_boot_wait_seconds": 80,
+  "boot_complete_keywords": [
+    "System boot completed",
+    "webOS ready",
+    "1st boot elapsed",
+    "teminalmanager-h:help",
+    "[RPMB]Auth Key is Ready!!!"
+  ]
+}

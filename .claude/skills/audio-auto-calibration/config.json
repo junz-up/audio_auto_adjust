@@ -1,0 +1,111 @@
+{
+  "os_type": "webOS",
+  "enable_auto_calibration": true,
+  "impedance": "6R",
+  "rated_power": 6.0,
+  "power_tolerance_percent": 5,
+  "thd_n_max_percent": 10,
+  "max_iterations": 5,
+  "max_input_drc_rounds": 3,
+  "max_input_recal_rounds": 3,
+  "drc_precheck_channel": "HDMI",
+  "drc_precheck_headroom_ratio": 1.2,
+  "headphone": {
+    "target_vrms_mv_min": 130,
+    "target_vrms_mv_max": 150,
+    "thd_n_max_percent": 10
+  },
+  "measure_stable_window_s": 3.0,
+  "measure_stable_threshold_w": 0.5,
+  "measure_poll_interval_s": 0.2,
+  "measure_stable_timeout_s": 15.0,
+  "test_volume": 100,
+  "usb_path": "AUTO",
+  "min_power_w": 2.0,
+  "channel_diff_limit_w": 1.0,
+  "switch_channel_wait_s": 5.0,
+  "signal_play_wait_s": 10.0,
+  "platform_rules": {
+    "drc_step_db": 0.125
+  },
+  "control_config_paths": {
+    "ap":        "../control_ap_ad2502/adapter/config.json",
+    "tg39":      "../control_tg39/adapter/config.json",
+    "dtvplayer": "../control_dtvplayer/adapter/config.json",
+    "uiat":      "../control_uiat/adapter/config.json",
+    "tv":        "../control_webos_wee/adapter/config.json"
+  },
+  "routing": {
+    "DTV-DVB": "DTVPlayer",
+    "DTV-ATSC": "DTVPlayer",
+    "DTV-ISDB": "DTVPlayer",
+    "ATV-PAL": "TG39",
+    "ATV-N": "TG39",
+    "HDMI": "AP",
+    "AV": "AP",
+    "USB": "USB"
+  },
+  "channels": {
+    "DTV-DVB": {
+      "enabled": true,
+      "presets": {
+        "default": {"rf_freq": 482, "bandwidth": 0, "modulation": 2, "guard_interval": 0, "fft_size": 0, "code_rate": 4},
+        "509-6m":  {"rf_freq": 509, "bandwidth": 2, "modulation": 1, "guard_interval": 2, "fft_size": 0, "code_rate": 0},
+        "191-7m":  {"rf_freq": 191.5, "bandwidth": 1, "modulation": 2, "guard_interval": 0, "fft_size": 0, "code_rate": 0}
+      },
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "target_power_w": 6.0, "db_level": -12},
+        {"name": "max_input", "kind": "max",      "target_power_w": 6.0, "db_level":   0}
+      ]
+    },
+    "DTV-ATSC": {
+      "enabled": false,
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "target_power_w": 6.0, "rf_freq": 563, "db_level": -12},
+        {"name": "max_input", "kind": "max",      "target_power_w": 6.0, "rf_freq": 563, "db_level":   0}
+      ]
+    },
+    "DTV-ISDB": {
+      "enabled": false,
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "target_power_w": 6.0, "rf_freq": 177.143, "db_level": -12},
+        {"name": "max_input", "kind": "max",      "target_power_w": 6.0, "rf_freq": 177.143, "db_level":   0}
+      ]
+    },
+    "ATV-PAL": {
+      "enabled": true,
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "target_power_w": 6.0, "rf_freq": 48.25, "modulation": "30kHz"},
+        {"name": "max_input", "kind": "max",      "target_power_w": 6.0, "rf_freq": 48.25, "modulation": "100kHz"}
+      ]
+    },
+    "ATV-N": {
+      "enabled": false,
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "target_power_w": 6.0, "rf_freq": 83.25, "modulation": "17kHz"},
+        {"name": "max_input", "kind": "max",      "target_power_w": 6.0, "rf_freq": 83.25, "modulation": "68kHz"}
+      ]
+    },
+    "HDMI": {
+      "enabled": true,
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "frequency": 1000, "db_level": -12, "target_power_w": 6.0},
+        {"name": "max_input", "kind": "max",      "frequency": 1000, "db_level":   0, "target_power_w": 6.0}
+      ]
+    },
+    "AV": {
+      "enabled": true,
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "frequency": 1000, "voltage": "500mV", "target_power_w": 6.0},
+        {"name": "max_input", "kind": "max",      "frequency": 1000, "voltage": "2V",    "target_power_w": 6.0}
+      ]
+    },
+    "USB": {
+      "enabled": true,
+      "test_cases": [
+        {"name": "standard",  "kind": "standard", "db_level": -12, "target_power_w": 6.0},
+        {"name": "max_input", "kind": "max",      "db_level":   0, "target_power_w": 6.0}
+      ]
+    }
+  }
+}

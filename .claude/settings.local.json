@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(code . *)",
+      "Bash(python *)",
+      "Bash(tasklist)",
+      "Bash(tasklist /FI \"PID eq 3472\" /FO CSV)",
+      "Bash(tasklist /FI \"PID eq 18224\" /FO CSV)",
+      "Bash(tasklist //FI \"PID eq 3472\")",
+      "Bash(tasklist //FI \"PID eq 18224\")",
+      "Bash(taskkill //PID 18224 //F)",
+      "Bash(taskkill //PID 3472 //F)",
+      "Skill(update-config)"
+    ]
+  }
+}
