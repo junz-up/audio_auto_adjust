@@ -70,6 +70,7 @@ class WebOSTVAdapter(BaseTVAdapter):
         self.serial = SerialHelper(config["serial"])
         self.uiat = UIATController(config["uiat"])
         self.code_root = self._normalize_remote_code_root(config["code_root"])
+        self._detected_baud_rate: Optional[int] = None
         self._remote_home_cache: Optional[str] = None
         self._audio_config_path: Optional[str] = None
         self._config_content_cache: Optional[str] = None
@@ -112,9 +113,39 @@ class WebOSTVAdapter(BaseTVAdapter):
             time.sleep(post_wait_s)
         return True
 
+    def _send_serial_with_baud_probe(self, cmd: str, wait_time: float = 3.0) -> Tuple[bool, str]:
+        if self._detected_baud_rate is not None:
+            self.serial.set_baud_rate(self._detected_baud_rate)
+            self.serial.open()
+            for _ in range(3):
+                success, response = self.serial.send_command(cmd, wait_time=wait_time)
+                if self.serial.try_exit_debug_mode(response):
+                    time.sleep(0.5)
+                    success, response = self.serial.send_command(cmd, wait_time=wait_time)
+                if success and "OK" in response:
+                    return True, response
+                time.sleep(0.3)
+            self._detected_baud_rate = None
+
+        for baud_rate in (115200, 9600):
+            self.serial.set_baud_rate(baud_rate)
+            self.serial.open()
+            for _ in range(3):
+                success, response = self.serial.send_command(cmd, wait_time=wait_time)
+                if self.serial.try_exit_debug_mode(response):
+                    time.sleep(0.5)
+                    success, response = self.serial.send_command(cmd, wait_time=wait_time)
+                if success and "OK" in response:
+                    self._detected_baud_rate = baud_rate
+                    return True, response
+                time.sleep(0.3)
+            self.serial.close()
+        return False, ""
+
     def set_volume(self, level: int) -> bool:
-        self.serial.open()
-        success, _ = self.serial.send_command("kf 00 64")
+        if not isinstance(level, int) or not 0 <= level <= 100:
+            raise ValueError(f"音量须在 0-100 之间，收到: {level!r}")
+        success, _ = self._send_serial_with_baud_probe(f"kf 00 {level:02x}")
         return success
 
     def set_sound_output(self, output: str) -> bool:
@@ -122,8 +153,7 @@ class WebOSTVAdapter(BaseTVAdapter):
         cmd = commands.get(output)
         if not cmd:
             raise ValueError(f"不支持的音频输出: {output}, 可选: spk, hp")
-        self.serial.open()
-        success, _ = self.serial.send_command(cmd)
+        success, _ = self._send_serial_with_baud_probe(cmd)
         return success
 
     def switch_channel(
@@ -147,19 +177,8 @@ class WebOSTVAdapter(BaseTVAdapter):
         if not cmd:
             return False
 
-        for baud_rate in (115200, 9600):
-            self.serial.set_baud_rate(baud_rate)
-            self.serial.open()
-            for _ in range(3):
-                success, response = self.serial.send_command(cmd, wait_time=3.0)
-                if self.serial.try_exit_debug_mode(response):
-                    time.sleep(0.5)
-                    success, response = self.serial.send_command(cmd, wait_time=3.0)
-                if success and "OK" in response:
-                    return True
-                time.sleep(0.3)
-            self.serial.close()
-        return False
+        success, _ = self._send_serial_with_baud_probe(cmd, wait_time=3.0)
+        return success
 
     def check_code_exists(self) -> bool:
         code_root = self.config["code_root"]

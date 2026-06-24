@@ -14,7 +14,7 @@
     "thd_n_max_percent": 10
   },
   "control_config_paths": {
-    "ap":        "../control_ap_ad2502/adapter/config.json",
+    "ap":        "../control_ap/adapter/config.json",
     "tg39":      "../control_tg39/adapter/config.json",
     "dtvplayer": "../control_dtvplayer/adapter/config.json",
     "uiat":      "../control_uiat/adapter/config.json",

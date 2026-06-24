@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 import time
-from typing import Tuple
+from typing import Optional, Tuple
 
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
@@ -94,6 +94,7 @@ class SSHHelper:
         code_path: str,
         docker_cmd: str = "docker_tizen_build",
         build_cmd: str = "make ocs",
+        stream: bool = True,
     ) -> Tuple[bool, str]:
         self.connect()
         channel = self._client.invoke_shell()
@@ -102,7 +103,7 @@ class SSHHelper:
             channel.recv(4096)
 
         channel.send(f"cd {code_path} && pwd\n".encode())
-        ok, out = self._read_until(channel, [r"\$\s*$"], timeout_s=30)
+        ok, out = self._read_until(channel, [r"\$\s*$"], timeout_s=30, stream_label="cd" if stream else None)
         if not ok:
             return False, "进入代码目录失败"
 
@@ -111,6 +112,7 @@ class SSHHelper:
             channel,
             [r"command not found", r"builder@[^:]+:"],
             timeout_s=180,
+            stream_label="docker" if stream else None,
         )
         if not ok or "command not found" in out:
             return False, f"Docker 启动失败: {docker_cmd}"
@@ -121,6 +123,7 @@ class SSHHelper:
             channel,
             [r"builder@[^:]+:", r"make:\s\*\*\*"],
             timeout_s=self.build_timeout,
+            stream_label="build" if stream else None,
         )
         elapsed = int(time.time() - start_ts)
 
@@ -130,9 +133,20 @@ class SSHHelper:
             return False, f"编译失败 ({elapsed}s)"
         return True, f"编译成功 ({elapsed}s)"
 
-    def _read_until(self, channel, patterns: list[str], timeout_s: int = 120) -> Tuple[bool, str]:
+    def _read_until(
+        self,
+        channel,
+        patterns: list[str],
+        timeout_s: int = 120,
+        stream_label: Optional[str] = None,
+        stream_interval_s: float = 5.0,
+    ) -> Tuple[bool, str]:
+        import sys as _sys
         end_time = time.time() + timeout_s
         buf = ""
+        printed_clean_len = 0
+        last_stream = time.time()
+        start_ts = time.time()
         regexes = [re.compile(p, re.MULTILINE) for p in patterns]
         while time.time() < end_time:
             if channel.recv_ready():
@@ -141,7 +155,21 @@ class SSHHelper:
                 scan_buf = strip_ansi(buf)
                 for rx in regexes:
                     if rx.search(scan_buf):
+                        if stream_label and len(scan_buf) > printed_clean_len:
+                            elapsed = int(time.time() - start_ts)
+                            tail = scan_buf[printed_clean_len:].splitlines()[-3:]
+                            for ln in tail:
+                                print(f"[{stream_label} +{elapsed}s] {ln}", file=_sys.stderr, flush=True)
                         return True, scan_buf
+                # 定时把新收到的行流到 stderr（基于去 ANSI 后的长度计算增量）
+                if stream_label and (time.time() - last_stream) >= stream_interval_s and len(scan_buf) > printed_clean_len:
+                    elapsed = int(time.time() - start_ts)
+                    new_lines = scan_buf[printed_clean_len:].splitlines()
+                    tail = new_lines[-3:] if len(new_lines) > 3 else new_lines
+                    for ln in tail:
+                        print(f"[{stream_label} +{elapsed}s] {ln}", file=_sys.stderr, flush=True)
+                    printed_clean_len = len(scan_buf)
+                    last_stream = time.time()
             else:
                 time.sleep(0.3)
         return False, strip_ansi(buf)

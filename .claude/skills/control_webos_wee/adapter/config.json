@@ -3,12 +3,12 @@
   "os_type": "webOS",
   "code_root": "/ssd1/huangjunzhi/01_code/webos/wee30_1126",
   "serial": {
-    "port": "COM3",
+    "port": "COM5",
     "baud_rate": 115200,
     "timeout": 5
   },
   "uiat": {
-    "port": "COM4",
+    "port": "COM3",
     "baud_rate": 115200,
     "timeout": 2,
     "resp_window": 1.0,
@@ -19,7 +19,7 @@
     "host": "10.22.31.22",
     "port": 60022,
     "user": "huangjunzhi",
-    "password": "",
+    "password": "657Yellow./",
     "docker_cmd": "docker_tizen_build",
     "build_cmd": "make tmp",
     "build_timeout": 14400

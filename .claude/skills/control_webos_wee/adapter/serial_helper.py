@@ -52,6 +52,14 @@ class SerialHelper:
             self._serial.flush()
             time.sleep(0.5)
             return True
+        if "/ #" in response or "/bin/sh" in response:
+            self._serial.write(b"exit\r\n")
+            self._serial.flush()
+            time.sleep(1.0)
+            self._serial.write(b"x\r\n")
+            self._serial.flush()
+            time.sleep(0.5)
+            return True
         return False
 
     def send_command(self, cmd: str, wait_time: float = 1.0) -> Tuple[bool, str]:

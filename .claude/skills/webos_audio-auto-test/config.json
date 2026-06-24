@@ -1,0 +1,208 @@
+{
+  "os_type": "webOS",
+  "report_template": "output/reports/template/template.xlsm",
+  "output_dir": "output/reports",
+
+  "impedance": "6R",
+  "rated_power_w": 10.0,
+  "power_tolerance_percent": 10,
+  "thd_n_max_percent": 10,
+  "lr_imbalance_db": 0.5,
+
+  "snr": {
+    "speaker_target_power_w": 0.5,
+    "speaker_threshold_db": 60,
+    "speaker_row": 59,
+    "headphone_target_vrms_mv": 100,
+    "headphone_threshold_db": 55,
+    "headphone_row": 8,
+    "volume_search_min": 1,
+    "volume_search_max": 100,
+    "volume_search_max_iters": 14,
+    "power_relative_tolerance": 0.05,
+    "noise_settle_s": 3.0
+  },
+
+  "speaker_index": {
+    "freq_response_row": 63,
+    "crosstalk_row": 65,
+    "phase_row": 66,
+    "freq_sweep_start_hz": 20,
+    "freq_sweep_stop_hz": 20000,
+    "freq_sweep_points": 100,
+    "crosstalk_freq_hz": 1000,
+    "signal_level_vrms": 0.5,
+    "crosstalk_threshold_db": 50,
+    "phase_max_deg": 10,
+    "freq_response_low_limit_hz": 100,
+    "freq_response_high_limit_hz": 15000
+  },
+
+  "switch_channel_wait_s": 5.0,
+  "signal_play_wait_s": 10.0,
+  "volume_settle_s": 2.0,
+
+  "headphone": {
+    "target_vrms_mv_min": 130,
+    "target_vrms_mv_max": 150,
+    "thd_n_max_percent": 10
+  },
+
+  "routing": {
+    "DTV-DVB": "DTVPlayer",
+    "DTV-ATSC": "DTVPlayer",
+    "DTV-ISDB": "DTVPlayer",
+    "ATV-PAL": "TG39",
+    "ATV-N": "TG39",
+    "HDMI": "AP",
+    "AV": "AP",
+    "USB": "USB"
+  },
+
+  "speaker_performance": {
+    "sheet": "音频性能测试（中高音喇叭）",
+    "channels": {
+      "AV": {
+        "row_start": 4,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_power", "frequency": 1000, "voltage": "500mV", "metric": "power"},
+          {"kind": "standard_thd",   "frequency": 1000, "voltage": "500mV", "metric": "thd"},
+          {"kind": "max_power",      "frequency": 1000, "voltage": "2V",    "metric": "power"},
+          {"kind": "max_thd",        "frequency": 1000, "voltage": "2V",    "metric": "thd"}
+        ]
+      },
+      "ATV-PAL": {
+        "row_start": 30,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_power", "rf_freq": 48.25, "modulation": "27kHz", "metric": "power"},
+          {"kind": "standard_thd",   "rf_freq": 48.25, "modulation": "27kHz", "metric": "thd"},
+          {"kind": "max_power",      "rf_freq": 48.25, "modulation": "100kHz", "metric": "power"},
+          {"kind": "max_thd",        "rf_freq": 48.25, "modulation": "100kHz", "metric": "thd"}
+        ]
+      },
+      "DTV-DVB": {
+        "row_start": 34,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_power", "frequency": 1000, "db_level": -12, "metric": "power"},
+          {"kind": "standard_thd",   "frequency": 1000, "db_level": -12, "metric": "thd"},
+          {"kind": "max_power",      "frequency": 1000, "db_level": 0,   "metric": "power"},
+          {"kind": "max_thd",        "frequency": 1000, "db_level": 0,   "metric": "thd"}
+        ]
+      },
+      "HDMI": {
+        "row_start": 38,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_power", "frequency": 1000, "db_level": -12, "metric": "power"},
+          {"kind": "standard_thd",   "frequency": 1000, "db_level": -12, "metric": "thd"},
+          {"kind": "max_power",      "frequency": 1000, "db_level": 0,   "metric": "power"},
+          {"kind": "max_thd",        "frequency": 1000, "db_level": 0,   "metric": "thd"}
+        ]
+      },
+      "USB": {
+        "row_start": 42,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_power", "db_level": -12, "metric": "power"},
+          {"kind": "standard_thd",   "db_level": -12, "metric": "thd"},
+          {"kind": "max_power",      "db_level": 0,   "metric": "power"},
+          {"kind": "max_thd",        "db_level": 0,   "metric": "thd"}
+        ]
+      }
+    }
+  },
+
+  "speaker_curve": {
+    "sheet": {
+      "AV":   "中高音喇叭音量曲线（AV）",
+      "ATV":  "中高音喇叭音量曲线（ATV）",
+      "HDMI": "中高音喇叭音量曲线（HDMI）"
+    },
+    "data_start_row": 3,
+    "volume_column": 3,
+    "left_column": 4,
+    "right_column": 5,
+    "db_column": 6,
+    "volumes": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100],
+    "channels": {
+      "AV": {
+        "enabled": true,
+        "frequency": 1000,
+        "voltage": "500mV"
+      },
+      "ATV-PAL": {
+        "enabled": true,
+        "target_sheet": "ATV",
+        "rf_freq": 48.25,
+        "modulation": "27kHz"
+      },
+      "HDMI": {
+        "enabled": true,
+        "frequency": 1000,
+        "db_level": -12
+      }
+    }
+  },
+
+  "headphone_performance": {
+    "sheet": "音频性能测试（耳机）",
+    "sections": {
+      "AV": {
+        "row_start": 4,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_vrms", "frequency": 1000, "voltage": "500mV", "metric": "vrms"},
+          {"kind": "standard_thd",  "frequency": 1000, "voltage": "500mV", "metric": "thd"},
+          {"kind": "max_vrms",      "frequency": 1000, "voltage": "2V",    "metric": "vrms"},
+          {"kind": "max_thd",       "frequency": 1000, "voltage": "2V",    "metric": "thd"}
+        ]
+      },
+      "ATV-PAL": {
+        "row_start": 22,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_vrms", "rf_freq": 48.25, "modulation": "27kHz",  "metric": "vrms"},
+          {"kind": "standard_thd",  "rf_freq": 48.25, "modulation": "27kHz",  "metric": "thd"},
+          {"kind": "max_vrms",      "rf_freq": 48.25, "modulation": "100kHz", "metric": "vrms"},
+          {"kind": "max_thd",       "rf_freq": 48.25, "modulation": "100kHz", "metric": "thd"}
+        ]
+      },
+      "HDMI": {
+        "row_start": 26,
+        "enabled": true,
+        "cases": [
+          {"kind": "standard_vrms", "frequency": 1000, "db_level": -12, "metric": "vrms"},
+          {"kind": "standard_thd",  "frequency": 1000, "db_level": -12, "metric": "thd"},
+          {"kind": "max_vrms",      "frequency": 1000, "db_level": 0,   "metric": "vrms"},
+          {"kind": "max_thd",       "frequency": 1000, "db_level": 0,   "metric": "thd"}
+        ]
+      }
+    }
+  },
+
+  "headphone_curve": {
+    "sheet": "耳机音量曲线",
+    "data_start_row": 3,
+    "volume_column": 3,
+    "left_column": 4,
+    "right_column": 5,
+    "db_column": 6,
+    "volumes": [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100],
+    "channel": {
+      "name": "AV",
+      "frequency": 1000,
+      "voltage": "500mV"
+    }
+  },
+
+  "control_config_paths": {
+    "ap":        "../control_ap/adapter/config.json",
+    "tg39":      "../control_tg39/adapter/config.json",
+    "dtvplayer": "../control_dtvplayer/adapter/config.json",
+    "uiat":      "../control_uiat/adapter/config.json",
+    "tv":        "../control_webos_wee/adapter/config.json"
+  }
+}

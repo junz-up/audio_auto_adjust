@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import locale
 import math
@@ -15,6 +16,12 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+# Windows 终端默认 GBK，强制 UTF-8 避免中文乱码
+if sys.stdout.encoding != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if sys.stderr.encoding != "utf-8":
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 
 def _log(msg: str):
@@ -54,15 +61,17 @@ def _load_config() -> dict:
 ROUTING_TO_SKILL = {
     "DTVPlayer": "control_dtvplayer",
     "TG39": "control_tg39",
-    "AP": "control_ap_ad2502",
+    "AP": "control_ap",
 }
 
 
 class APProcess:
-    """管理 AP AD2502 的 stdin 服务进程。"""
+    """管理 AP 音频分析仪的 stdin 服务进程。"""
 
-    def __init__(self, impedance: float):
-        cmd = [sys.executable, "-m", "control_ap_ad2502.adapter.main", "serve", "--impedance", str(impedance)]
+    def __init__(self, impedance: float, no_relay: bool = False):
+        cmd = [sys.executable, "-m", "control_ap.adapter.main", "serve", "--impedance", str(impedance)]
+        if no_relay:
+            cmd.append("--no-relay")
         self._proc = subprocess.Popen(
             cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, text=True, encoding=_subprocess_encoding(), errors="replace",
@@ -275,7 +284,7 @@ def _measure_one(tv_args: List[str], routing: dict, channel_name: str, test_case
     return _summarize(resp["data"], config, test_case)
 
 
-LR_IMBALANCE_LIMIT_W = 0.8
+LR_IMBALANCE_RATIO = 0.15
 
 
 def _summarize(measurement: dict, config: dict, test_case: dict) -> dict:
@@ -289,9 +298,10 @@ def _summarize(measurement: dict, config: dict, test_case: dict) -> dict:
     max_thd = max(thd_values) if thd_values else 0.0
     max_thd_limit = float(test_case.get("thd_n_max_percent", config.get("thd_n_max_percent", 10)))
 
-    # L/R 平衡检查
+    # L/R 平衡检查（用目标功率的百分比作为阈值）
     lr_imbalance = (max(powers) - min(powers)) if len(powers) >= 2 else 0.0
-    lr_balanced = lr_imbalance <= LR_IMBALANCE_LIMIT_W
+    lr_limit_w = target_power * LR_IMBALANCE_RATIO
+    lr_balanced = lr_imbalance <= lr_limit_w
 
     # 每个声道都必须在规格范围内
     all_channels_in_range = all(target_min <= p <= target_max for p in powers)
@@ -434,6 +444,7 @@ def main() -> int:
     parser.add_argument("--preset", type=str, default="default", help="DTV 通道预设名 (如 default, 509-6m)")
     parser.add_argument("--specs", nargs="*", help="多规格批量校准，格式: 4R5W=SOUND_TYPE_ID 4R3W=SOUND_TYPE_ID")
     parser.add_argument("--output", type=str, default="spk", choices=["spk", "hp"], help="音频输出: spk=喇叭, hp=耳机")
+    parser.add_argument("--no-relay", action="store_true", help="跳过水泥负载继电器自动切换（手动切换时使用）")
     args = parser.parse_args()
 
     config = _load_config()
@@ -475,7 +486,7 @@ def main() -> int:
     impedance_ohm = _parse_impedance(impedance_str)
 
     try:
-        ap = APProcess(impedance_ohm)
+        ap = APProcess(impedance_ohm, no_relay=args.no_relay)
     except Exception as e:
         print(json.dumps({"status": "ERROR", "message": f"AP 启动失败: {e}"}, ensure_ascii=False, indent=2))
         return 1
@@ -517,7 +528,7 @@ def _run_multi_spec(specs: List[Tuple[str, float, str]], config: dict,
                 if current_ap:
                     current_ap.generator_off()
                     current_ap.quit()
-                current_ap = APProcess(impedance_ohm)
+                current_ap = APProcess(impedance_ohm, no_relay=args.no_relay)
                 current_impedance_ohm = impedance_ohm
 
             # 更新 config 中的规格参数
@@ -613,7 +624,10 @@ def _run_single_calibration(config: dict, ap: APProcess, enabled_channels: list,
                     tv_args = ["switch-channel", precheck_ch_name, "--case", json.dumps(max_case, ensure_ascii=False)]
                     summary = _measure_one(tv_args, routing, precheck_ch_name, max_case, ap, config, switch_wait, signal_wait)
                     avg_w = summary["avg_power_w"]
-                    _step(f"DRC预检 R{drc_round}: {precheck_ch_name}/max avg={avg_w:.3f}W (需>={headroom_target:.3f}W)")
+                    ch = summary["channels"]
+                    l_w = ch.get("L", {}).get("power", 0)
+                    r_w = ch.get("R", {}).get("power", 0)
+                    _step(f"DRC预检 R{drc_round}: {precheck_ch_name}/max L={l_w:.3f}W R={r_w:.3f}W avg={avg_w:.3f}W (需>={headroom_target:.3f}W)")
 
                     if avg_w >= headroom_target:
                         _step("DRC 余量满足")
@@ -664,14 +678,17 @@ def _run_single_calibration(config: dict, ap: APProcess, enabled_channels: list,
                         f"左右声道功率差异过大: {channel_name} "
                         f"L={summary['channels'].get('L', {}).get('power', 0):.3f}W "
                         f"R={summary['channels'].get('R', {}).get('power', 0):.3f}W "
-                        f"差值={summary['lr_imbalance_w']:.3f}W (限值{LR_IMBALANCE_LIMIT_W}W)，请检查AP阻抗设置"
+                        f"差值={summary['lr_imbalance_w']:.3f}W (限值{summary['lr_limit_w']:.1f}W)，请检查测试环境和接线"
                     )
 
                 verdict = "PASS" if summary["passed"] else "ADJUST"
                 if is_hp:
                     _step(f"Gain R{iteration}: {channel_name}/std avg={summary.get('avg_vrms_mv', 0):.1f}mV -> {verdict}")
                 else:
-                    _step(f"Gain R{iteration}: {channel_name}/std avg={summary['avg_power_w']:.3f}W -> {verdict}")
+                    ch = summary["channels"]
+                    l_w = ch.get("L", {}).get("power", 0)
+                    r_w = ch.get("R", {}).get("power", 0)
+                    _step(f"Gain R{iteration}: {channel_name}/std L={l_w:.3f}W R={r_w:.3f}W -> {verdict}")
 
                 if summary["passed"]:
                     continue
@@ -730,7 +747,10 @@ def _run_single_calibration(config: dict, ap: APProcess, enabled_channels: list,
                         skipped_channels.add(channel_name)
                         continue
                     verdict = "PASS" if summary["passed"] else "ADJUST"
-                    _step(f"最终DRC R{recal_round}: {channel_name}/max avg={summary['avg_power_w']:.3f}W -> {verdict}")
+                    ch = summary["channels"]
+                    l_w = ch.get("L", {}).get("power", 0)
+                    r_w = ch.get("R", {}).get("power", 0)
+                    _step(f"最终DRC R{recal_round}: {channel_name}/max L={l_w:.3f}W R={r_w:.3f}W -> {verdict}")
                     if not summary["passed"]:
                         out_of_range.append((channel_name, summary))
 
@@ -787,7 +807,10 @@ def _run_single_calibration(config: dict, ap: APProcess, enabled_channels: list,
                 if is_hp:
                     _step(f"验收: {channel_name}/{case_name} avg={summary.get('avg_vrms_mv', 0):.1f}mV -> {verdict}")
                 else:
-                    _step(f"验收: {channel_name}/{case_name} avg={summary['avg_power_w']:.3f}W -> {verdict}")
+                    ch = summary["channels"]
+                    l_w = ch.get("L", {}).get("power", 0)
+                    r_w = ch.get("R", {}).get("power", 0)
+                    _step(f"验收: {channel_name}/{case_name} L={l_w:.3f}W R={r_w:.3f}W -> {verdict}")
                 if not summary["passed"]:
                     all_passed = False
 
